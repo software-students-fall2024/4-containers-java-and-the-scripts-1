@@ -1,0 +1,42 @@
+name: Web App CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install pipenv
+      run: pip install pipenv
+
+    - name: Install dependencies
+      working-directory: ./web-app
+      run: |
+        pipenv install --dev
+
+    - name: Run linting
+      working-directory: ./web-app
+      run: pipenv run pylint app.py
+
+    - name: Format code with Black
+      working-directory: ./web-app
+      run: pipenv run black .
+
+    - name: Run tests
+      working-directory: ./web-app
+      run: pipenv run pytest
