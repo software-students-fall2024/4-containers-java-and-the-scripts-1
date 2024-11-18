@@ -1,0 +1,43 @@
+name: Machine Learning Client CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install pipenv
+      run: pip install pipenv
+
+    - name: Install dependencies
+      working-directory: ./machine-learning-client
+      run: |
+        pipenv install --dev
+
+    - name: Run linting
+      working-directory: ./machine-learning-client
+      run: pipenv run pylint src/main.py
+
+    - name: Format code with Black
+      working-directory: ./machine-learning-client
+      run: pipenv run black .
+
+    - name: Run tests
+      working-directory: ./machine-learning-client
+      run: pipenv run pytest
+
