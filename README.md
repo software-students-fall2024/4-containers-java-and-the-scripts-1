@@ -1,5 +1,4 @@
 ![Lint-free](https://github.com/nyu-software-engineering/containerized-app-exercise/actions/workflows/lint.yml/badge.svg)
-![CI](https://github.com/software-students-fall2024/4-containers-java-and-the-scripts-1/actions/workflows/ci.yml/badge.svg)
 ![Machine Learning Client CI Pipeline](https://github.com/software-students-fall2024/4-containers-java-and-the-scripts-1/actions/workflows/machine_learning_client_ci.yml/badge.svg)
 ![Web App CI Pipeline](https://github.com/software-students-fall2024/4-containers-java-and-the-scripts-1/actions/workflows/web_app_ci.yml/badge.svg)
 # Containerized App Exercise
