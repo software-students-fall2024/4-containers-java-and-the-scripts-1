@@ -17,24 +17,24 @@ from werkzeug.security import generate_password_hash
 from app import app  # Adjust this import based on your project structure
 
 
-@pytest.fixture
-def app_fixture():
+@pytest.fixture(name='app_fixture')
+def fixture_app():
     """Fixture to set up the Flask app for testing."""
     app.config["TESTING"] = True
     app.secret_key = "test_secret_key"
     yield app
 
 
-@pytest.fixture
-def client_fixture(app_fixture):
+@pytest.fixture(name='client_fixture')
+def fixture_client(app_fixture):
     """Fixture to set up the test client."""
     with app_fixture.app_context():
         with app_fixture.test_client() as test_client:
             yield test_client
 
 
-@pytest.fixture
-def mock_user_fixture():
+@pytest.fixture(name='mock_user_fixture')
+def fixture_mock_user():
     """Fixture to provide a mocked user."""
     user = MagicMock()
     user.id = str(ObjectId())
@@ -51,9 +51,8 @@ def test_register(mock_db, client_fixture):
     This test simulates a registration request and verifies that
     the user is successfully registered and redirected to the login page.
     """
-    client = client_fixture
     mock_db.users.find_one.return_value = None  # Simulate no existing user
-    response = client.post(
+    response = client_fixture.post(
         "/register",
         data={
             "username": "new_user",
@@ -74,14 +73,13 @@ def test_login(mock_login_user, mock_db, client_fixture):
     This test simulates a login request and verifies that
     the user can log in successfully and is redirected appropriately.
     """
-    client = client_fixture
     mock_db.users.find_one.return_value = {
         "_id": ObjectId("1234567890abcdef12345678"),
         "username": "test_user",
         "password": generate_password_hash("password"),  # Correctly hashed password
     }
 
-    response = client.post(
+    response = client_fixture.post(
         "/login", data={"username": "test_user", "password": "password"}
     )
     assert response.status_code == 302  # Should redirect to index
@@ -102,20 +100,18 @@ def test_upload_audio(
     This test mocks the file upload process to the '/upload' route,
     processes the audio, and verifies that the file is uploaded and processed successfully.
     """
-    client = client_fixture
     mock_user = mock_user_fixture
     upload_folder = "./uploads"
     os.makedirs(upload_folder, exist_ok=True)  # Ensure upload folder exists
 
     try:
         mock_current_user.get_id.return_value = mock_user.id
-        # Use Path.touch() instead of open()
         mock_convert.side_effect = lambda input_file, output_file: Path(output_file).touch()
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {"status": "success"}
 
         data = {"audio": (io.BytesIO(b"fake audio data"), "fake_audio.wav")}
-        response = client.post(
+        response = client_fixture.post(
             "/upload", data=data, content_type="multipart/form-data"
         )
         assert response.status_code == 200
@@ -135,13 +131,16 @@ def test_mood_trends(
     This test simulates a request to the '/api/mood-trends' route
     and verifies that the correct mood counts are returned.
     """
-    client = client_fixture
     mock_user = mock_user_fixture
     mock_current_user.get_id.return_value = mock_user.id
 
-    mock_collection.count_documents.side_effect = [5, 3, 2]  # Positive, Negative, Neutral counts
+    mock_collection.count_documents.side_effect = [
+        5,
+        3,
+        2,
+    ]  # Positive, Negative, Neutral counts
 
-    response = client.get("/api/mood-trends")
+    response = client_fixture.get("/api/mood-trends")
     assert response.status_code == 200
     assert response.json == {"Positive": 5, "Negative": 3, "Neutral": 2}
 
@@ -157,12 +156,11 @@ def test_delete_entry(
     This test simulates a DELETE request to the '/delete-journal/<id>' route
     and verifies that the journal entry is deleted successfully.
     """
-    client = client_fixture
     mock_user = mock_user_fixture
     mock_current_user.get_id.return_value = mock_user.id
 
     mock_collection.delete_one.return_value.deleted_count = 1
 
-    response = client.delete("/delete-journal/1234567890abcdef12345678")
+    response = client_fixture.delete("/delete-journal/1234567890abcdef12345678")
     assert response.status_code == 200
     assert b"Entry deleted successfully" in response.data
