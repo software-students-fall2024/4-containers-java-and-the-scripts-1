@@ -138,6 +138,7 @@ def test_mood_trends(mock_collection, mock_current_user, client, mock_user):
     assert response.json == {"Positive": 5, "Negative": 3, "Neutral": 2}
 
 
+
 @patch("app.current_user")
 @patch("app.collection")
 def test_delete_entry(
