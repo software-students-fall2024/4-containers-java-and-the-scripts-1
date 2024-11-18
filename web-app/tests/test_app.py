@@ -17,7 +17,7 @@ from werkzeug.security import generate_password_hash
 from app import app  # Adjust this import based on your project structure
 
 
-@pytest.fixture(name='app_fixture')
+@pytest.fixture(name="app_fixture")
 def fixture_app():
     """Fixture to set up the Flask app for testing."""
     app.config["TESTING"] = True
@@ -25,7 +25,7 @@ def fixture_app():
     yield app
 
 
-@pytest.fixture(name='client_fixture')
+@pytest.fixture(name="client_fixture")
 def fixture_client(app_fixture):
     """Fixture to set up the test client."""
     with app_fixture.app_context():
@@ -33,7 +33,7 @@ def fixture_client(app_fixture):
             yield test_client
 
 
-@pytest.fixture(name='mock_user_fixture')
+@pytest.fixture(name="mock_user_fixture")
 def fixture_mock_user():
     """Fixture to provide a mocked user."""
     user = MagicMock()
@@ -106,7 +106,9 @@ def test_upload_audio(
 
     try:
         mock_current_user.get_id.return_value = mock_user.id
-        mock_convert.side_effect = lambda input_file, output_file: Path(output_file).touch()
+        mock_convert.side_effect = lambda input_file, output_file: Path(
+            output_file
+        ).touch()
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {"status": "success"}
 
