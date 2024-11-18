@@ -1,65 +1,60 @@
 """
-This module contains unit tests for the main functionalities in the application,
-including the main function, logging setup, and handling audio files.
+Unit tests for main.py functions, including Flask endpoints and MongoDB operations.
 """
 
-import logging
 from unittest.mock import patch, MagicMock
+from io import BytesIO
 import pytest
-from src.main import main, setup_logging
+from src.main import app
 
 
-@pytest.fixture
-def mock_env_vars(monkeypatch):
+@pytest.fixture(name="flask_test_client")
+def client_fixture():
     """
-    Fixture to mock environment variables for the tests.
+    Flask test client fixture for testing Flask endpoints.
     """
-    monkeypatch.setenv("MONGO_URI", "mongodb://mock_uri")
-    monkeypatch.setenv("AUDIO_DIR", "./mock_audio")
+    app.testing = True
+    with app.test_client() as test_client:
+        yield test_client
 
 
 @patch("src.main.MongoClient")
-@patch("src.main.get_audio_files", return_value=[])
-def test_main_no_audio_files(mock_get_audio_files, mock_mongo_client, caplog):
-    """
-    Test `main` function when no audio files are found in the directory.
-    """
-    del mock_mongo_client  # Unused mock to satisfy pylint
-    with caplog.at_level(logging.INFO):
-        main()
-    assert "There are no audio files in the directory." in caplog.text
-
-
-@patch("src.main.get_audio_files", return_value=["file1.wav"])
-@patch("src.main.transcribe_audio", return_value="Hello world")
-@patch("src.main.analyze_sentiment", return_value={
-    "polarity": 0.5, "subjectivity": 0.6, "mood": "Positive"
-})
-@patch("src.main.store_data")
-@patch("src.main.MongoClient")
-def test_main_with_audio_files(
-    mock_mongo_client, mock_store_data, mock_analyze_sentiment,
-    mock_transcribe_audio, mock_get_audio_files
+@patch("src.main.transcribe_audio", return_value="Test transcription")
+@patch(
+    "src.main.analyze_sentiment",
+    return_value={"polarity": 0.5, "subjectivity": 0.6, "mood": "Positive"},
+)
+def test_process_audio_success(
+    mock_analyze_sentiment, mock_transcribe_audio, mock_mongo_client, flask_test_client
 ):
     """
-    Test `main` function when audio files are processed successfully.
+    Test successful audio processing via `/process-audio`.
     """
     mock_collection = MagicMock()
     mock_mongo_client.return_value.__getitem__.return_value = mock_collection
 
-    main()
+    data = {"audio": (BytesIO(b"fake data"), "test.wav")}
 
-    mock_get_audio_files.assert_called_once()
-    mock_transcribe_audio.assert_called_once_with("file1.wav")
-    mock_analyze_sentiment.assert_called_once_with("Hello world")
-    mock_store_data.assert_called_once()
+    response = flask_test_client.post(
+        "/process-audio", data=data, content_type="multipart/form-data"
+    )
 
-def test_setup_logging(caplog):
+    assert response.status_code == 200
+    assert response.json["status"] == "success"
+    mock_transcribe_audio.assert_called_once()
+    mock_analyze_sentiment.assert_called_once()
+
+
+@patch("src.main.transcribe_audio", side_effect=RuntimeError("Transcription error"))
+def test_process_audio_transcription_error(_mock_transcribe_audio, flask_test_client):
     """
-    Test `setup_logging` function to ensure logs are properly set up.
+    Test handling of transcription errors during audio processing.
     """
-    setup_logging()
-    with caplog.at_level(logging.INFO):
-        logging.getLogger().info("Test log message")
-    assert "Test log message" in caplog.text
-    
+    data = {"audio": (BytesIO(b"fake data"), "test.wav")}
+
+    response = flask_test_client.post(
+        "/process-audio", data=data, content_type="multipart/form-data"
+    )
+
+    assert response.status_code == 500
+    assert "Transcription error" in response.json["details"]

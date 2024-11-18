@@ -157,17 +157,27 @@ python3 --version
     cd 4-containers-java-and-the-scripts-1
     ```
 
-3. **Set up a virtual environment using `pipenv`**:
+3. **Build the docker containers**
+    ```bash
+    docker-compose build
+    ```
+
+4. **Start the docker containers**
+    ```bash
+    docker-compose up
+    ```
+
+5. **Set up a virtual environment using `pipenv`**:
     ```bash
     pipenv install --dev
     ```
 
-4. **Activate the virtual environment**:
+6. **Activate the virtual environment**:
     ```bash
     pipenv shell
     ```
 
-5. **Modify and run the program**:
+7. **Modify and run the program**:
     ```bash
     python3 machine-learning-client/src/file_name
     ```
@@ -177,12 +187,20 @@ python3 --version
     python3 web-app/app.py
     ```
 
-6. **Run tests**:
+8. **Run tests**:
     ```bash
     pipenv run pytest
     ```
 
-7. **Exit the virtual environment**:
+9. **Access the application**
+    The application can be used locally at http://localhost:5000.
+
+10. **Shut down the Docker containers**
+    ```bash
+    docker-compose down
+    ```
+
+11. **Exit the virtual environment**:
     ```bash
     exit
     ```

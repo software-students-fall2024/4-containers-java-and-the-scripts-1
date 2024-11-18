@@ -45,8 +45,8 @@ def transcribe_audio(file_path):
     except sr.UnknownValueError:
         logging.error("Speech Recognition could not understand audio")
         return ""
-    except sr.RequestError as e:
-        logging.error("Could not request results; %s", e)
+    except sr.RequestError as error:
+        logging.error("Could not request results; %s", error)
         return ""
 
 
@@ -86,5 +86,5 @@ def store_data(collection, data):
     try:
         collection.insert_one(data)
         logging.info("Data stored successfully.")
-    except PyMongoError as e:
-        logging.error("Failed to store data: %s", e)
+    except PyMongoError as error:
+        logging.error("Failed to store data: %s", error)

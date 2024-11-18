@@ -108,13 +108,30 @@
             cursor: pointer;
             text-align: center;
         }
-        
+        #logout-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 100px;
+            padding: 5px 5px;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.8);
+            color: #000002;
+            cursor: pointer;
+            transition: background 0.3s ease, box-shadow 0.2s ease;
+        }
+        #logout-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }       
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Voice Journal</h1>
-    
+    <button id="logout-btn" onclick="window.location.href='/logout'">Logout</button>
     <div id="greeting">Hi, <span id="username">{{ username }}</span></div>
     
     <h2>Mood Tracker</h2>
@@ -139,49 +156,55 @@
     <button onclick="window.location.href='/'">Back to Home</button>
 
     <script>
+let moodChart;
+
 // Function to load mood trends and render the chart
 function loadMoodTrends() {
             fetch('/api/mood-trends')
                 .then(response => response.json())
                 .then(data => {
                     const ctx = document.getElementById('moodChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'pie',
-                        data: {
-                            labels: Object.keys(data),
-                            datasets: [{
-                                data: Object.values(data),
-                                backgroundColor: [
-                                    '#F6A5A5',  // Light Red for Negative
-                                    '#FFF6B5', // Light Yellow for Neutral
-                                    '#A8D5BA', // Light Green for Positive
+                    if (moodChart) {
+                // Destroy the old chart before creating a new one
+                moodChart.destroy();
+            }
 
-
-                                ]
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                             plugins: {
-                                legend: {
-                                    position: 'top',
-                                    labels: {
-                                        color: '#444', // Matches the dreamy theme
-                                        font: {
-                                            family: "'Arial', sans-serif",
-                                            size: 14
-                                        }
-                                    }
+            // Create a new chart
+            moodChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{
+                        data: Object.values(data),
+                        backgroundColor: [
+                            '#F6A5A5',  // Light Red for Negative
+                            '#FFF6B5', // Light Yellow for Neutral
+                            '#A8D5BA', // Light Green for Positive
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#444',
+                                font: {
+                                    family: "'Arial', sans-serif",
+                                    size: 14
                                 }
                             }
                         }
-
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching mood trends:', error);
-                    alert('Failed to load mood trends.');
-                });
+                    }
+                }
+            });
+        })
+        
+        .catch(error => {
+            console.error('Error fetching mood trends:', error);
+            alert('Failed to load mood trends.');
+        });
         }
 
         // **New Function: Load Recent Entries and Populate the Table**
@@ -235,8 +258,8 @@ function loadMoodTrends() {
                                     .then(response => {
                                         if (response.ok) {
                                             alert('Entry deleted successfully!');
-                                            loadRecentEntries(); // Reload entries after deletion
                                             loadMoodTrends();
+                                            loadRecentEntries(); // Reload entries after deletion
                                         } else {
                                             alert('Failed to delete entry.');
                                         }

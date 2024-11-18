@@ -30,6 +30,8 @@
             font-family: 'Indie Flower', cursive;
             font-size: 1.2rem;
             margin-bottom: 30px;
+            margin-left:30px;
+            margin-right:30px;
             color: #666;
             text-align: center;
             max-width: 600px;
@@ -197,6 +199,11 @@
 
         uploadForm.addEventListener("submit", (event) => {
             event.preventDefault();
+            // Check if there are any audio chunks
+            if (audioChunks.length === 0) {
+                alert("No audio file recorded. Please record audio before uploading.");
+                return; // Exit the function if no audio is recorded
+            }
             const formData = new FormData(uploadForm);
             fetch('/upload', { method: 'POST', body: formData })
                 .then(response => response.json())
