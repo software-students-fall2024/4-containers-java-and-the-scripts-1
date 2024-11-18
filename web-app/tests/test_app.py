@@ -139,11 +139,7 @@ def test_mood_trends(
     mock_user = mock_user_fixture
     mock_current_user.get_id.return_value = mock_user.id
 
-    mock_collection.count_documents.side_effect = [
-        5,
-        3,
-        2,
-    ]  # Positive, Negative, Neutral counts
+    mock_collection.count_documents.side_effect = [5, 3, 2]  # Positive, Negative, Neutral counts
 
     response = client.get("/api/mood-trends")
     assert response.status_code == 200
