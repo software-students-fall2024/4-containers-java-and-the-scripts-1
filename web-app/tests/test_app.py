@@ -10,6 +10,7 @@ import io
 import os
 import shutil
 from unittest.mock import patch, MagicMock
+from pathlib import Path  # Import Path for file operations
 import pytest
 from bson.objectid import ObjectId
 from werkzeug.security import generate_password_hash
@@ -17,7 +18,7 @@ from app import app  # Adjust this import based on your project structure
 
 
 @pytest.fixture
-def test_app():
+def app_fixture():
     """Fixture to set up the Flask app for testing."""
     app.config["TESTING"] = True
     app.secret_key = "test_secret_key"
@@ -25,35 +26,40 @@ def test_app():
 
 
 @pytest.fixture
-def client(test_app):
+def client_fixture(app_fixture):
     """Fixture to set up the test client."""
-    with test_app.app_context():
-        with test_app.test_client() as client:
-            yield client
+    with app_fixture.app_context():
+        with app_fixture.test_client() as test_client:
+            yield test_client
 
 
 @pytest.fixture
-def mock_user():
+def mock_user_fixture():
     """Fixture to provide a mocked user."""
     user = MagicMock()
-    user.id = str(ObjectId())  # Valid ObjectId as a string
+    user.id = str(ObjectId())
     user.username = "test_user"
-    user.is_authenticated = True  # Mark user as logged in
+    user.is_authenticated = True
     return user
 
 
 @patch("app.db")
-def test_register(mock_db, client):
+def test_register(mock_db, client_fixture):
     """
     Test the user registration process.
 
     This test simulates a registration request and verifies that
     the user is successfully registered and redirected to the login page.
     """
+    client = client_fixture
     mock_db.users.find_one.return_value = None  # Simulate no existing user
     response = client.post(
         "/register",
-        data={"username": "new_user", "password": "password", "repassword": "password"},
+        data={
+            "username": "new_user",
+            "password": "password",
+            "repassword": "password",
+        },
     )
     assert response.status_code == 302  # Should redirect to login
     assert b"Redirecting..." in response.data
@@ -61,13 +67,14 @@ def test_register(mock_db, client):
 
 @patch("app.db")
 @patch("app.login_user")
-def test_login(mock_login_user, mock_db, client):
+def test_login(mock_login_user, mock_db, client_fixture):
     """
     Test the user login process.
 
     This test simulates a login request and verifies that
     the user can log in successfully and is redirected appropriately.
     """
+    client = client_fixture
     mock_db.users.find_one.return_value = {
         "_id": ObjectId("1234567890abcdef12345678"),
         "username": "test_user",
@@ -87,7 +94,7 @@ def test_login(mock_login_user, mock_db, client):
 @patch("app.requests.post")
 @patch("app.convert_to_pcm_wav")
 def test_upload_audio(
-    mock_convert, mock_post, mock_current_user, client, mock_user
+    mock_convert, mock_post, mock_current_user, client_fixture, mock_user_fixture
 ):
     """
     Test the upload audio route.
@@ -95,14 +102,15 @@ def test_upload_audio(
     This test mocks the file upload process to the '/upload' route,
     processes the audio, and verifies that the file is uploaded and processed successfully.
     """
+    client = client_fixture
+    mock_user = mock_user_fixture
     upload_folder = "./uploads"
     os.makedirs(upload_folder, exist_ok=True)  # Ensure upload folder exists
 
     try:
         mock_current_user.get_id.return_value = mock_user.id
-        mock_convert.side_effect = lambda input_file, output_file: open(
-            output_file, "w"
-        ).close()  # Mock file creation
+        # Use Path.touch() instead of open()
+        mock_convert.side_effect = lambda input_file, output_file: Path(output_file).touch()
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {"status": "success"}
 
@@ -118,13 +126,17 @@ def test_upload_audio(
 
 @patch("app.current_user")
 @patch("app.collection")
-def test_mood_trends(mock_collection, mock_current_user, client, mock_user):
+def test_mood_trends(
+    mock_collection, mock_current_user, client_fixture, mock_user_fixture
+):
     """
     Test the mood trends API route.
 
     This test simulates a request to the '/api/mood-trends' route
     and verifies that the correct mood counts are returned.
     """
+    client = client_fixture
+    mock_user = mock_user_fixture
     mock_current_user.get_id.return_value = mock_user.id
 
     mock_collection.count_documents.side_effect = [
@@ -138,11 +150,10 @@ def test_mood_trends(mock_collection, mock_current_user, client, mock_user):
     assert response.json == {"Positive": 5, "Negative": 3, "Neutral": 2}
 
 
-
 @patch("app.current_user")
 @patch("app.collection")
 def test_delete_entry(
-    mock_collection, mock_current_user, client, mock_user
+    mock_collection, mock_current_user, client_fixture, mock_user_fixture
 ):
     """
     Test deleting a journal entry.
@@ -150,6 +161,8 @@ def test_delete_entry(
     This test simulates a DELETE request to the '/delete-journal/<id>' route
     and verifies that the journal entry is deleted successfully.
     """
+    client = client_fixture
+    mock_user = mock_user_fixture
     mock_current_user.get_id.return_value = mock_user.id
 
     mock_collection.delete_one.return_value.deleted_count = 1
