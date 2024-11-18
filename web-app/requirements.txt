@@ -6,11 +6,7 @@ Flask-PyMongo==2.3.0
 Jinja2==3.1.2
 pymongo==4.5.0
 python-dotenv==1.0.0
-<<<<<<< HEAD
-regex==2024.9.11
-=======
 gunicorn==20.1.0
 regex== 2024.9.11
->>>>>>> 3c58b60c33409521013772100591e26a93233ee7
 Flask-Login==0.6.3
 Werkzeug==2.3.7
